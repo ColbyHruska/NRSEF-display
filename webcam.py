@@ -1,8 +1,9 @@
 import cv2
-from models import filt, encode, decode
+from models import filt, esr
 import numpy as np
 import pygame
 from time import sleep
+import keyboard
 
 class Viewer:
     def __init__(self, update_func, display_size):
@@ -16,29 +17,37 @@ class Viewer:
     
     def start(self):
         running = True
+        self.update()
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-            Z = self.update_func(self.vc)
-
-            surf = pygame.surfarray.make_surface(Z)
-            surf = pygame.transform.scale(surf, self.display.get_size())
-            self.display.blit(surf, (0, 0))
-
-            sleep(1)
-            pygame.display.update()
-
+            try:
+                if keyboard.is_pressed('enter'):
+                    print("hi")
+                    self.update()
+                    sleep(5)
+                    continue
+            except:
+                continue
         self.vc.release()
         pygame.quit()
+    
+    def update(self):
+        img = self.update_func(self.vc)
+
+        surf = pygame.surfarray.make_surface(img)
+        surf = pygame.transform.scale(surf, self.display.get_size())
+        self.display.blit(surf, (0, 0))
+
+        pygame.display.update()
 def update(vc):
     _, cam = vc.read()
     resized = cv2.resize(cam, (64, 64))
 
     image = resized / 127.5 - 1
     image = np.expand_dims(image, 0)
-    image = np.array(filt(image)[0])
-    image = image * 127.5 + 127.5
+    image = np.array(esr(filt(image)[0])[0])
     return image.astype('uint8')
-viewer = Viewer(update, (64, 64))
+viewer = Viewer(update, (256, 256))
 viewer.start()
